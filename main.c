@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -195,28 +194,27 @@ int boop(char** tabuleiro, int linhas, int colunas, int linha, int coluna, char 
     return boopRealizado;
 }
 
+// Função auxiliar para verificar e processar linha (mover para fora da função graduarLinhaDe3)
+int verificarLinha(char p1, char p2, char p3, char pecaGatinho, char pecaGato) {
+    int gatinhosCount = 0;
+    int gatosCount = 0;
+
+    if (p1 == pecaGatinho) gatinhosCount++;
+    else if (p1 == pecaGato) gatosCount++;
+
+    if (p2 == pecaGatinho) gatinhosCount++;
+    else if (p2 == pecaGato) gatosCount++;
+
+    if (p3 == pecaGatinho) gatinhosCount++;
+    else if (p3 == pecaGato) gatosCount++;
+
+    return (gatinhosCount == 2 && gatosCount == 1) ||
+           (gatinhosCount == 1 && gatosCount == 2);
+}
+
 // Função para verificar e graduar linha de 3 (incluindo combinações de Gatos e Gatinhos)
 int graduarLinhaDe3(char** tabuleiro, int linhas, int colunas, char pecaGatinho, char pecaGato, Jogador* jogador) {
     int graduou = 0;
-
-    // Função auxiliar para verificar e processar linha
-    int verificarLinha(char p1, char p2, char p3) {
-        int gatinhosCount = 0;
-        int gatosCount = 0;
-
-        if (p1 == pecaGatinho) gatinhosCount++;
-        else if (p1 == pecaGato) gatosCount++;
-
-        if (p2 == pecaGatinho) gatinhosCount++;
-        else if (p2 == pecaGato) gatosCount++;
-
-        if (p3 == pecaGatinho) gatinhosCount++;
-        else if (p3 == pecaGato) gatosCount++;
-
-        // Retorna 1 se tiver 2 gatinhos e 1 gato OU 2 gatos e 1 gatinho
-        return (gatinhosCount == 2 && gatosCount == 1) ||
-               (gatinhosCount == 1 && gatosCount == 2);
-    }
 
     // Verificar horizontal
     for (int i = 0; i < linhas; i++) {
@@ -229,7 +227,7 @@ int graduarLinhaDe3(char** tabuleiro, int linhas, int colunas, char pecaGatinho,
                 (p2 == pecaGatinho || p2 == pecaGato) &&
                 (p3 == pecaGatinho || p3 == pecaGato)) {
 
-                if (verificarLinha(p1, p2, p3)) {
+                if (verificarLinha(p1, p2, p3, pecaGatinho, pecaGato)) {
                     jogador->gatos += 3; // 2 novos + 1 devolvido
 
                     tabuleiro[i][j] = ' ';
@@ -253,7 +251,7 @@ int graduarLinhaDe3(char** tabuleiro, int linhas, int colunas, char pecaGatinho,
                 (p2 == pecaGatinho || p2 == pecaGato) &&
                 (p3 == pecaGatinho || p3 == pecaGato)) {
 
-                if (verificarLinha(p1, p2, p3)) {
+                if (verificarLinha(p1, p2, p3, pecaGatinho, pecaGato)) {
                     jogador->gatos += 3; // 2 novos + 1 devolvido
 
                     tabuleiro[i][j] = ' ';
@@ -277,7 +275,7 @@ int graduarLinhaDe3(char** tabuleiro, int linhas, int colunas, char pecaGatinho,
                 (p2 == pecaGatinho || p2 == pecaGato) &&
                 (p3 == pecaGatinho || p3 == pecaGato)) {
 
-                if (verificarLinha(p1, p2, p3)) {
+                if (verificarLinha(p1, p2, p3, pecaGatinho, pecaGato)) {
                     jogador->gatos += 3; // 2 novos + 1 devolvido
 
                     tabuleiro[i][j] = ' ';
@@ -301,7 +299,7 @@ int graduarLinhaDe3(char** tabuleiro, int linhas, int colunas, char pecaGatinho,
                 (p2 == pecaGatinho || p2 == pecaGato) &&
                 (p3 == pecaGatinho || p3 == pecaGato)) {
 
-                if (verificarLinha(p1, p2, p3)) {
+                if (verificarLinha(p1, p2, p3, pecaGatinho, pecaGato)) {
                     jogador->gatos += 3; // 2 novos + 1 devolvido
 
                     tabuleiro[i][j] = ' ';
