@@ -52,6 +52,7 @@ void exibeTabuleiro(char** tabuleiro, int linhas, int colunas, int pecasJogador1
 }
 
 int verificarLinhaDe3(char** tabuleiro, int linhas, int colunas, char peca) {
+    // Verificar horizontal
     for (int i = 0; i < linhas; i++) {
         for (int j = 0; j < colunas - 2; j++) {
             if (tabuleiro[i][j] == peca && tabuleiro[i][j+1] == peca && tabuleiro[i][j+2] == peca) {
@@ -60,14 +61,16 @@ int verificarLinhaDe3(char** tabuleiro, int linhas, int colunas, char peca) {
         }
     }
 
-    for (int i = 0; i < linhas - 2; i++) {
-        for (int j = 0; j < colunas; j++) {
+    // Verificar vertical
+    for (int j = 0; j < colunas; j++) {
+        for (int i = 0; i < linhas - 2; i++) {
             if (tabuleiro[i][j] == peca && tabuleiro[i+1][j] == peca && tabuleiro[i+2][j] == peca) {
                 return 1;
             }
         }
     }
 
+    // Verificar diagonal principal
     for (int i = 0; i < linhas - 2; i++) {
         for (int j = 0; j < colunas - 2; j++) {
             if (tabuleiro[i][j] == peca && tabuleiro[i+1][j+1] == peca && tabuleiro[i+2][j+2] == peca) {
@@ -76,6 +79,7 @@ int verificarLinhaDe3(char** tabuleiro, int linhas, int colunas, char peca) {
         }
     }
 
+    // Verificar diagonal secundária
     for (int i = 2; i < linhas; i++) {
         for (int j = 0; j < colunas - 2; j++) {
             if (tabuleiro[i][j] == peca && tabuleiro[i-1][j+1] == peca && tabuleiro[i-2][j+2] == peca) {
@@ -470,7 +474,10 @@ void jogar(EstadoJogo* estado) {
                 printf("||      Jogador %c venceu o jogo!       ||\n",
                        estado->jogada % 2 == 1 ? 'X' : 'O');
                 printf("==========================================\n\n");
-                break;
+                printf("Pressione qualquer tecla para continuar...\n");
+                getchar(); // Espera o usuário pressionar uma tecla
+                getchar(); // Captura o '\n' deixado pelo scanf anterior
+                break; // Sai do loop para retornar ao menu inicial
             }
 
             estado->jogada++;
@@ -489,6 +496,7 @@ void jogar(EstadoJogo* estado) {
         }
     }
 
+    // Libera a memória do tabuleiro após o término do jogo
     for (int i = 0; i < estado->linhas; i++) {
         free(estado->tabuleiro[i]);
     }
