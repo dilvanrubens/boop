@@ -315,69 +315,79 @@ int graduarLinhaDe3(char** tabuleiro, int linhas, int colunas, char pecaGatinho,
     return graduou;
 }
 
-// Função modificada para jogar
-void jogar() {
-    int linhas = 6, colunas = 6;
-    char** tabuleiro = NULL;
-    Jogador jog1 = {8, 0};
-    Jogador jog2 = {8, 0};
-    int jogada = 1;
+typedef struct {
+    int linhas;
+    int colunas;
+    char** tabuleiro;
+    Jogador jog1;
+    Jogador jog2;
+    int jogada;
+} EstadoJogo;
 
-    // Declarar as variáveis que estavam faltando
+void salvarJogo(EstadoJogo* estado) {
+    FILE* arquivo = fopen("jogo_salvo.bin", "wb");
+    if (arquivo == NULL) {
+        printf("Erro ao criar arquivo de save!\n");
+        return;
+    }
+
+    fwrite(&estado->linhas, sizeof(int), 1, arquivo);
+    fwrite(&estado->colunas, sizeof(int), 1, arquivo);
+
+    for (int i = 0; i < estado->linhas; i++) {
+        fwrite(estado->tabuleiro[i], sizeof(char), estado->colunas, arquivo);
+    }
+
+    fwrite(&estado->jog1, sizeof(Jogador), 1, arquivo);
+    fwrite(&estado->jog2, sizeof(Jogador), 1, arquivo);
+    fwrite(&estado->jogada, sizeof(int), 1, arquivo);
+
+    fclose(arquivo);
+    printf("\nJogo salvo com sucesso!\n");
+}
+
+int carregarJogo(EstadoJogo* estado) {
+    FILE* arquivo = fopen("jogo_salvo.bin", "rb");
+    if (arquivo == NULL) {
+        printf("Nenhum jogo salvo encontrado!\n");
+        return 0;
+    }
+
+    fread(&estado->linhas, sizeof(int), 1, arquivo);
+    fread(&estado->colunas, sizeof(int), 1, arquivo);
+
+    estado->tabuleiro = criarTabuleiro(estado->linhas, estado->colunas);
+
+    for (int i = 0; i < estado->linhas; i++) {
+        fread(estado->tabuleiro[i], sizeof(char), estado->colunas, arquivo);
+    }
+
+    fread(&estado->jog1, sizeof(Jogador), 1, arquivo);
+    fread(&estado->jog2, sizeof(Jogador), 1, arquivo);
+    fread(&estado->jogada, sizeof(int), 1, arquivo);
+
+    fclose(arquivo);
+    return 1;
+}
+
+void jogar(EstadoJogo* estado) {
     char peca;
     char colunaLetra;
     int linhaEscolhida;
 
-    // Declarar os protótipos das funções no início do arquivo
-    void salvarJogo(char** tabuleiro, int linhas, int colunas, Jogador jog1, Jogador jog2, int jogada);
-    int carregarJogo(char*** tabuleiro, int* linhas, int* colunas, Jogador* jog1, Jogador* jog2, int* jogada);
-
-    // Perguntar se deseja carregar jogo salvo
-    printf("Deseja carregar um jogo salvo? (S/N): ");
-    char resposta;
-    scanf(" %c", &resposta);
-
-    if (resposta == 'S' || resposta == 's') {
-        if (!carregarJogo(&tabuleiro, &linhas, &colunas, &jog1, &jog2, &jogada)) {
-            tabuleiro = criarTabuleiro(linhas, colunas);
-        }
-    } else {
-        tabuleiro = criarTabuleiro(linhas, colunas);
-    }
-
     while (1) {
-        exibeTabuleiro(tabuleiro, linhas, colunas, jog1.gatinhos, jog2.gatinhos);
-
-        // Adicionar opção de salvar
-        printf("\nDigite 'S' para salvar o jogo ou pressione ENTER para continuar: ");
-        char opcao;
-        while ((opcao = getchar()) != '\n') {
-            if (opcao == 'S' || opcao == 's') {
-                salvarJogo(tabuleiro, linhas, colunas, jog1, jog2, jogada);
-                printf("Deseja sair do jogo? (S/N): ");
-                scanf(" %c", &opcao);
-                if (opcao == 'S' || opcao == 's') {
-                    // Liberar memória e sair
-                    for (int i = 0; i < linhas; i++) {
-                        free(tabuleiro[i]);
-                    }
-                    free(tabuleiro);
-                    return;
-                }
-                break;
-            }
-        }
+        exibeTabuleiro(estado->tabuleiro, estado->linhas, estado->colunas, estado->jog1.gatinhos, estado->jog2.gatinhos);
 
         printf("\n=== Placar de Gatos ===\n");
-        printf("Jogador (X): %d Gatos\n", jog1.gatos);
-        printf("Jogador (O): %d Gatos\n", jog2.gatos);
+        printf("Jogador (X): %d Gatos\n", estado->jog1.gatos);
+        printf("Jogador (O): %d Gatos\n", estado->jog2.gatos);
 
-        Jogador* jogAtual = (jogada % 2 == 1) ? &jog1 : &jog2;
-        char pecaGatinho = (jogada % 2 == 1) ? 'x' : 'o';
-        char pecaGato = (jogada % 2 == 1) ? 'X' : 'O';
+        Jogador* jogAtual = (estado->jogada % 2 == 1) ? &estado->jog1 : &estado->jog2;
+        char pecaGatinho = (estado->jogada % 2 == 1) ? 'x' : 'o';
+        char pecaGato = (estado->jogada % 2 == 1) ? 'X' : 'O';
 
         printf("\n========= TURNO DO JOGADOR %c =========\n",
-               jogada % 2 == 1 ? 'X' : 'O');
+               estado->jogada % 2 == 1 ? 'X' : 'O');
 
         printf("\nPecas disponiveis:\n");
         printf("- Gatinhos: %d\n", jogAtual->gatinhos);
@@ -385,7 +395,7 @@ void jogar() {
             printf("- Gatos: %d\n", jogAtual->gatos);
         }
 
-        int escolha = 1; // Começa assumindo gatinho
+        int escolha = 1;
         if (jogAtual->gatos > 0) {
             printf("\nEscolha sua peca:\n");
             printf("1 - Gatinho\n");
@@ -410,64 +420,67 @@ void jogar() {
             continue;
         }
 
-        printf("Escolha a coluna (a-%c) e linha (1-%d): ", 'a' + colunas - 1, linhas);
-        scanf(" %c %d", &colunaLetra, &linhaEscolhida);
+        printf("Escolha a coluna (a-%c) e linha (1-%d) ou digite 's' para salvar: ", 'a' + estado->colunas - 1, estado->linhas);
+        char input[10];
+        scanf("%s", input);
+
+        if (input[0] == 's' || input[0] == 'S') {
+            salvarJogo(estado);
+            printf("Jogo salvo!\n");
+            continue;
+        }
+
+        colunaLetra = input[0];
+        linhaEscolhida = atoi(&input[1]) - 1;
         int coluna = colunaLetra - 'a';
-        linhaEscolhida--;
 
-        if (linhaEscolhida >= 0 && linhaEscolhida < linhas &&
-            coluna >= 0 && coluna < colunas &&
-            tabuleiro[linhaEscolhida][coluna] == ' ') {
+        if (linhaEscolhida >= 0 && linhaEscolhida < estado->linhas &&
+            coluna >= 0 && coluna < estado->colunas &&
+            estado->tabuleiro[linhaEscolhida][coluna] == ' ') {
 
-            tabuleiro[linhaEscolhida][coluna] = peca;
+            estado->tabuleiro[linhaEscolhida][coluna] = peca;
 
-            // Atualizar contadores
             if (escolha == 1) {
                 jogAtual->gatinhos--;
             } else {
                 jogAtual->gatos--;
             }
 
-            // Realizar boop PRIMEIRO
-            if (boop(tabuleiro, linhas, colunas, linhaEscolhida, coluna, peca, &jog1, &jog2)) {
+            if (boop(estado->tabuleiro, estado->linhas, estado->colunas, linhaEscolhida, coluna, peca, &estado->jog1, &estado->jog2)) {
                 printf("\n     >> Boop! Peca adversaria empurrada!\n");
             }
 
-            // Verificar linha de 3 Gatinhos APÓS o boop
-            if (escolha == 1 && verificarLinhaDe3(tabuleiro, linhas, colunas, peca)) {
-                exibeTabuleiro(tabuleiro, linhas, colunas, jog1.gatinhos, jog2.gatinhos);
+            if (escolha == 1 && verificarLinhaDe3(estado->tabuleiro, estado->linhas, estado->colunas, peca)) {
+                exibeTabuleiro(estado->tabuleiro, estado->linhas, estado->colunas, estado->jog1.gatinhos, estado->jog2.gatinhos);
                 printf("Linha de 3 Gatinhos formada! Ganhando 3 Gatos!\n");
-                removerGatinhos(tabuleiro, linhas, colunas, peca);
+                removerGatinhos(estado->tabuleiro, estado->linhas, estado->colunas, peca);
                 jogAtual->gatos += 3;
             }
 
-            // Verificar graduação após verificar 3 gatinhos
-            if (graduarLinhaDe3(tabuleiro, linhas, colunas, pecaGatinho, pecaGato, jogAtual)) {
+            if (graduarLinhaDe3(estado->tabuleiro, estado->linhas, estado->colunas, pecaGatinho, pecaGato, jogAtual)) {
                 printf("\n- Linha formada!\n");
                 printf("- Os gatinhos foram promovidos a gatos!\n");
                 printf("- O gato da linha voltou para sua reserva!\n");
             }
 
-            // Verificar vitória por linha de 3 Gatos
-            if (verificarLinhaDe3(tabuleiro, linhas, colunas, pecaGato)) {
-                exibeTabuleiro(tabuleiro, linhas, colunas, jog1.gatinhos, jog2.gatinhos);
+            if (verificarLinhaDe3(estado->tabuleiro, estado->linhas, estado->colunas, pecaGato)) {
+                exibeTabuleiro(estado->tabuleiro, estado->linhas, estado->colunas, estado->jog1.gatinhos, estado->jog2.gatinhos);
                 printf("\n==========================================\n");
                 printf("||            VITORIA!!!                ||\n");
                 printf("||      Jogador %c venceu o jogo!       ||\n",
-                       jogada % 2 == 1 ? 'X' : 'O');
+                       estado->jogada % 2 == 1 ? 'X' : 'O');
                 printf("==========================================\n\n");
                 break;
             }
 
-            jogada++;
+            estado->jogada++;
         } else {
             printf("Jogada invalida! Tente novamente.\n");
         }
 
-        // Verificar empate (todas as peças usadas e ninguém ganhou)
-        if (jog1.gatinhos == 0 && jog2.gatinhos == 0 &&
-            jog1.gatos == 0 && jog2.gatos == 0) {
-            exibeTabuleiro(tabuleiro, linhas, colunas, jog1.gatinhos, jog2.gatinhos);
+        if (estado->jog1.gatinhos == 0 && estado->jog2.gatinhos == 0 &&
+            estado->jog1.gatos == 0 && estado->jog2.gatos == 0) {
+            exibeTabuleiro(estado->tabuleiro, estado->linhas, estado->colunas, estado->jog1.gatinhos, estado->jog2.gatinhos);
             printf("\n==========================================\n");
             printf("||              EMPATE!!!               ||\n");
             printf("||      Todas as pecas foram usadas     ||\n");
@@ -476,11 +489,10 @@ void jogar() {
         }
     }
 
-    // Liberar memória
-    for (int i = 0; i < linhas; i++) {
-        free(tabuleiro[i]);
+    for (int i = 0; i < estado->linhas; i++) {
+        free(estado->tabuleiro[i]);
     }
-    free(tabuleiro);
+    free(estado->tabuleiro);
 }
 
 // Função que retorna o conteúdo de uma casa
@@ -595,16 +607,26 @@ void telaInicial() {
 
 int main() {
     int opcao;
+    EstadoJogo estado;
+
     do {
         telaInicial();
         scanf("%d", &opcao);
 
         switch(opcao) {
             case 1:
-                jogar();
+                estado.linhas = 6;
+                estado.colunas = 6;
+                estado.tabuleiro = criarTabuleiro(estado.linhas, estado.colunas);
+                estado.jog1 = (Jogador){8, 0};
+                estado.jog2 = (Jogador){8, 0};
+                estado.jogada = 1;
+                jogar(&estado);
                 break;
             case 2:
-                jogar(); // Vai perguntar se quer carregar jogo
+                if (carregarJogo(&estado)) {
+                    jogar(&estado);
+                }
                 break;
             case 3:
                 printf("Obrigado por jogar!\n");
@@ -615,64 +637,5 @@ int main() {
     } while (opcao != 3);
 
     return 0;
-}
-
-// Função para salvar o estado do jogo
-void salvarJogo(char** tabuleiro, int linhas, int colunas, Jogador jog1, Jogador jog2, int jogada) {
-    FILE* arquivo = fopen("jogo_salvo.bin", "wb");
-    if (arquivo == NULL) {
-        printf("Erro ao criar arquivo de save!\n");
-        return;
-    }
-
-    // Salvar dimensões do tabuleiro
-    fwrite(&linhas, sizeof(int), 1, arquivo);
-    fwrite(&colunas, sizeof(int), 1, arquivo);
-
-    // Salvar estado do tabuleiro
-    for (int i = 0; i < linhas; i++) {
-        fwrite(tabuleiro[i], sizeof(char), colunas, arquivo);
-    }
-
-    // Salvar estado dos jogadores
-    fwrite(&jog1, sizeof(Jogador), 1, arquivo);
-    fwrite(&jog2, sizeof(Jogador), 1, arquivo);
-
-    // Salvar número da jogada atual
-    fwrite(&jogada, sizeof(int), 1, arquivo);
-
-    fclose(arquivo);
-    printf("\nJogo salvo com sucesso!\n");
-}
-
-// Função para carregar jogo salvo
-int carregarJogo(char*** tabuleiro, int* linhas, int* colunas, Jogador* jog1, Jogador* jog2, int* jogada) {
-    FILE* arquivo = fopen("jogo_salvo.bin", "rb");
-    if (arquivo == NULL) {
-        printf("Nenhum jogo salvo encontrado!\n");
-        return 0;
-    }
-
-    // Ler dimensões do tabuleiro
-    fread(linhas, sizeof(int), 1, arquivo);
-    fread(colunas, sizeof(int), 1, arquivo);
-
-    // Criar novo tabuleiro
-    *tabuleiro = criarTabuleiro(*linhas, *colunas);
-
-    // Carregar estado do tabuleiro
-    for (int i = 0; i < *linhas; i++) {
-        fread((*tabuleiro)[i], sizeof(char), *colunas, arquivo);
-    }
-
-    // Carregar estado dos jogadores
-    fread(jog1, sizeof(Jogador), 1, arquivo);
-    fread(jog2, sizeof(Jogador), 1, arquivo);
-
-    // Carregar número da jogada atual
-    fread(jogada, sizeof(int), 1, arquivo);
-
-    fclose(arquivo);
-    return 1;
 }
 
